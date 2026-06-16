@@ -43,4 +43,3 @@ kotlin {
 flutter {
     source = "../.."
 }
-flutter.minSdk

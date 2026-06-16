@@ -1,6 +1,15 @@
 import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-import 'main.dart';
+import 'package:path/path.dart' as path;
+
+class Transaction {
+  int? id;
+  String title;
+  double amount;
+  bool isIncome;
+
+  Transaction(this.title, this.amount, this.isIncome,
+      {this.id});
+}
 
 class DatabaseHelper {
   static Database? _database;
@@ -12,10 +21,11 @@ class DatabaseHelper {
   }
 
   static Future<Database> initDB() async {
-    String path = join(await getDatabasesPath(),
+    String dbPath = path.join(
+        await getDatabasesPath(),
         'expense_tracker.db');
     return openDatabase(
-      path,
+      dbPath,
       version: 1,
       onCreate: (db, version) async {
         await db.execute('''
@@ -50,6 +60,7 @@ class DatabaseHelper {
         maps[i]['title'],
         maps[i]['amount'],
         maps[i]['isIncome'] == 1,
+        id: maps[i]['id'],
       );
     });
   }

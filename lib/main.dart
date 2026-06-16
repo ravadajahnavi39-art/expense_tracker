@@ -17,15 +17,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class Transaction {
-  int? id;
-  String title;
-  double amount;
-  bool isIncome;
-
-  Transaction(this.title, this.amount, this.isIncome,
-      {this.id});
-}
 
 class HomeScreen extends StatefulWidget {
   @override
