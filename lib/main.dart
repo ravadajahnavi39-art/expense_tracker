@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'database_helper.dart';
 
 void main() {
   runApp(MyApp());
@@ -17,24 +18,37 @@ class MyApp extends StatelessWidget {
 }
 
 class Transaction {
+  int? id;
   String title;
   double amount;
   bool isIncome;
 
-  Transaction(this.title, this.amount, this.isIncome);
+  Transaction(this.title, this.amount, this.isIncome,
+      {this.id});
 }
 
 class HomeScreen extends StatefulWidget {
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  _HomeScreenState createState() =>
+      _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<Transaction> transactions = [
-    Transaction('Salary', 10000, true),
-    Transaction('Food', 500, false),
-    Transaction('Transport', 200, false),
-  ];
+  List<Transaction> transactions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadTransactions();
+  }
+
+  void loadTransactions() async {
+    final data =
+        await DatabaseHelper.getTransactions();
+    setState(() {
+      transactions = data;
+    });
+  }
 
   double get totalIncome => transactions
       .where((t) => t.isIncome)
@@ -46,16 +60,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   double get balance => totalIncome - totalExpense;
 
-  void addTransaction(String title, double amount, bool isIncome) {
-    setState(() {
-      transactions.add(Transaction(title, amount, isIncome));
-    });
+  void addTransaction(
+      String title, double amount, bool isIncome) async {
+    final t = Transaction(title, amount, isIncome);
+    await DatabaseHelper.insertTransaction(t);
+    loadTransactions();
   }
 
-  void deleteTransaction(int index) {
-    setState(() {
-      transactions.removeAt(index);
-    });
+  void deleteTransaction(int index) async {
+    final t = transactions[index];
+    if (t.id != null) {
+      await DatabaseHelper.deleteTransaction(t.id!);
+    }
+    loadTransactions();
   }
 
   void showAddTransaction() {
@@ -67,27 +84,33 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+            top: Radius.circular(20)),
       ),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16, right: 16, top: 24,
+            bottom: MediaQuery.of(context)
+                .viewInsets
+                .bottom,
+            left: 16,
+            right: 16,
+            top: 24,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
               Text('Add Transaction',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                )),
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
               SizedBox(height: 16),
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Title (e.g. Food, Salary)',
+                  labelText:
+                      'Title (e.g. Food, Salary)',
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (val) => title = val,
@@ -104,22 +127,23 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(height: 12),
               Row(
                 children: [
-                  Text('Type: ', style: TextStyle(fontSize: 16)),
+                  Text('Type: ',
+                      style: TextStyle(fontSize: 16)),
                   SizedBox(width: 8),
                   ChoiceChip(
                     label: Text('Expense'),
                     selected: !isIncome,
                     selectedColor: Colors.red[100],
-                    onSelected: (_) =>
-                      setModalState(() => isIncome = false),
+                    onSelected: (_) => setModalState(
+                        () => isIncome = false),
                   ),
                   SizedBox(width: 8),
                   ChoiceChip(
                     label: Text('Income'),
                     selected: isIncome,
                     selectedColor: Colors.green[100],
-                    onSelected: (_) =>
-                      setModalState(() => isIncome = true),
+                    onSelected: (_) => setModalState(
+                        () => isIncome = true),
                   ),
                 ],
               ),
@@ -129,10 +153,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple,
-                    padding: EdgeInsets.symmetric(vertical: 14),
+                    padding: EdgeInsets.symmetric(
+                        vertical: 14),
                   ),
                   onPressed: () {
-                    if (title.isNotEmpty && amount.isNotEmpty) {
+                    if (title.isNotEmpty &&
+                        amount.isNotEmpty) {
                       addTransaction(
                         title,
                         double.parse(amount),
@@ -142,10 +168,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                   },
                   child: Text('Add Transaction',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    )),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16)),
                 ),
               ),
               SizedBox(height: 24),
@@ -162,12 +187,11 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text('Expense Tracker',
-          style: TextStyle(color: Colors.white)),
+            style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.purple,
       ),
       body: Column(
         children: [
-          // Balance Card
           Container(
             width: double.infinity,
             margin: EdgeInsets.all(16),
@@ -179,140 +203,170 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               children: [
                 Text('Total Balance',
-                  style: TextStyle(
-                    color: Colors.white70, fontSize: 16)),
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16)),
                 SizedBox(height: 8),
-                Text('₹${balance.toStringAsFixed(0)}',
+                Text(
+                  '₹${balance.toStringAsFixed(0)}',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
-                  )),
+                  ),
+                ),
                 SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment:
+                      MainAxisAlignment.spaceAround,
                   children: [
                     Column(children: [
                       Text('Income',
-                        style: TextStyle(color: Colors.white70)),
-                      Text('₹${totalIncome.toStringAsFixed(0)}',
+                          style: TextStyle(
+                              color: Colors.white70)),
+                      Text(
+                        '₹${totalIncome.toStringAsFixed(0)}',
                         style: TextStyle(
                           color: Colors.greenAccent,
                           fontWeight: FontWeight.bold,
-                        )),
+                        ),
+                      ),
                     ]),
                     Column(children: [
                       Text('Expenses',
-                        style: TextStyle(color: Colors.white70)),
-                      Text('₹${totalExpense.toStringAsFixed(0)}',
+                          style: TextStyle(
+                              color: Colors.white70)),
+                      Text(
+                        '₹${totalExpense.toStringAsFixed(0)}',
                         style: TextStyle(
                           color: Colors.redAccent,
                           fontWeight: FontWeight.bold,
-                        )),
+                        ),
+                      ),
                     ]),
                   ],
                 ),
               ],
             ),
           ),
-
-          // Title
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding:
+                EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween,
               children: [
                 Text('Recent Transactions',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  )),
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
                 Text('${transactions.length} items',
-                  style: TextStyle(color: Colors.purple)),
+                    style: TextStyle(
+                        color: Colors.purple)),
               ],
             ),
           ),
-
           SizedBox(height: 8),
-
-          // Transaction List
           Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: transactions.length,
-              itemBuilder: (context, index) {
-                final t = transactions[index];
-                return Container(
-                  margin: EdgeInsets.only(bottom: 12),
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(10),
+            child: transactions.isEmpty
+                ? Center(
+                    child: Text(
+                      'No transactions yet!\nTap + to add one.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 16),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: EdgeInsets.all(16),
+                    itemCount: transactions.length,
+                    itemBuilder: (context, index) {
+                      final t = transactions[index];
+                      return Container(
+                        margin:
+                            EdgeInsets.only(bottom: 12),
+                        padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: t.isIncome
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white,
+                          borderRadius:
+                              BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey
+                                  .withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: Icon(
-                          t.isIncome
-                            ? Icons.arrow_downward
-                            : Icons.arrow_upward,
-                          color: t.isIncome
-                            ? Colors.green
-                            : Colors.red,
+                        child: Row(
+                          children: [
+                            Container(
+                              padding:
+                                  EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: t.isIncome
+                                    ? Colors.green
+                                        .withOpacity(0.1)
+                                    : Colors.red
+                                        .withOpacity(
+                                            0.1),
+                                borderRadius:
+                                    BorderRadius
+                                        .circular(10),
+                              ),
+                              child: Icon(
+                                t.isIncome
+                                    ? Icons.arrow_downward
+                                    : Icons.arrow_upward,
+                                color: t.isIncome
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
+                            ),
+                            SizedBox(width: 16),
+                            Expanded(
+                              child: Text(t.title,
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight:
+                                          FontWeight
+                                              .w500)),
+                            ),
+                            Text(
+                              t.isIncome
+                                  ? '+₹${t.amount.toStringAsFixed(0)}'
+                                  : '-₹${t.amount.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight:
+                                    FontWeight.bold,
+                                color: t.isIncome
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(Icons.delete,
+                                  color: Colors.grey),
+                              onPressed: () =>
+                                  deleteTransaction(
+                                      index),
+                            ),
+                          ],
                         ),
-                      ),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: Text(t.title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          )),
-                      ),
-                      Text(
-                        t.isIncome
-                          ? '+₹${t.amount.toStringAsFixed(0)}'
-                          : '-₹${t.amount.toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: t.isIncome
-                            ? Colors.green
-                            : Colors.red,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      IconButton(
-                        icon: Icon(Icons.delete,
-                          color: Colors.grey),
-                        onPressed: () =>
-                          deleteTransaction(index),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.purple,
-        child: Icon(Icons.add, color: Colors.white),
+        child:
+            Icon(Icons.add, color: Colors.white),
         onPressed: showAddTransaction,
       ),
     );
