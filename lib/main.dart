@@ -1,5 +1,7 @@
+
 import 'package:flutter/material.dart';
 import 'database_helper.dart';
+import 'reports_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -16,6 +18,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 
 
 class HomeScreen extends StatefulWidget {
@@ -177,10 +180,24 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Expense Tracker',
-            style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.purple,
-      ),
+  title: Text('Expense Tracker',
+      style: TextStyle(color: Colors.white)),
+  backgroundColor: Colors.purple,
+  actions: [
+    IconButton(
+      icon: Icon(Icons.bar_chart,
+          color: Colors.white),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  ReportsScreen()),
+        );
+      },
+    ),
+  ],
+),
       body: Column(
         children: [
           Container(
